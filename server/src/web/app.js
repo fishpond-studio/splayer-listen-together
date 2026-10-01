@@ -44,6 +44,7 @@
       "gate.keyWrong": "密钥不正确，请重新输入",
       "gate.keyEmpty": "请填写密钥",
       "brand.label": "一起听",
+      "back.title": "返回房间列表",
       "copyLink.title": "复制房间链接",
       "langToggle.title": "Switch to English",
       "status.connecting": "连接中…",
@@ -79,7 +80,7 @@
       "rooms.pausedPrefix": "已暂停 · ",
       "toast.copied": "链接已复制",
       "toast.copyFailed": "复制失败，请手动复制地址栏",
-      "footer.credit": '由 <a href="https://github.com/SPlayer-Dev/SPlayer-Next" target="_blank" rel="noreferrer">SPlayer-Next</a> 控制插件上报 · <span id="serverTime">—</span>',
+      "footer.credit": '一起听服务端 <span class="ver" data-server-version>—</span> · 由 <a href="https://github.com/SPlayer-Dev/SPlayer-Next" target="_blank" rel="noreferrer">SPlayer-Next</a> 控制插件上报 · <span id="serverTime">—</span>',
       "log.eventParse": "无法解析事件",
       "source.netease": "网易云",
       "source.qqmusic": "QQ 音乐",
@@ -98,6 +99,7 @@
       "gate.keyWrong": "Wrong key, please try again",
       "gate.keyEmpty": "Please enter the key",
       "brand.label": "Listen Together",
+      "back.title": "Back to room list",
       "copyLink.title": "Copy room link",
       "langToggle.title": "切换到中文",
       "status.connecting": "Connecting…",
@@ -133,7 +135,7 @@
       "rooms.pausedPrefix": "Paused · ",
       "toast.copied": "Link copied",
       "toast.copyFailed": "Copy failed — please copy the address from the address bar",
-      "footer.credit": 'Reported by the <a href="https://github.com/SPlayer-Dev/SPlayer-Next" target="_blank" rel="noreferrer">SPlayer-Next</a> plugin · <span id="serverTime">—</span>',
+      "footer.credit": 'Listen Together server <span class="ver" data-server-version>—</span> · reported by the <a href="https://github.com/SPlayer-Dev/SPlayer-Next" target="_blank" rel="noreferrer">SPlayer-Next</a> plugin · <span id="serverTime">—</span>',
       "log.eventParse": "Failed to parse event",
       "source.netease": "NetEase",
       "source.qqmusic": "QQ Music",
@@ -734,6 +736,27 @@
    *  启动
    * ====================================================================== */
 
+  /**
+   * 把服务端版本显示出来。
+   *
+   * /api/health 不需要密钥，所以密钥闸门还没过的时候也能看到版本 ——
+   * 「更新到底成没成功」看这里最直接。
+   */
+  const loadVersion = async () => {
+    try {
+      const response = await fetch("/api/health");
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (!payload || typeof payload.version !== "string") return;
+      // 页脚和密钥闸门里各有一份
+      for (const node of document.querySelectorAll("[data-server-version]")) {
+        node.textContent = `v${payload.version}`;
+      }
+    } catch {
+      /* 拿不到就留着占位符 */
+    }
+  };
+
   applyI18n();
 
   /** 顶栏语言切换：zh_cn ↔ en_us，记忆到 localStorage，即时生效 */
@@ -742,7 +765,12 @@
     localStorage.setItem(LANG_STORAGE, lang);
     applyI18n();
     rerenderDynamic();
+    // 页脚节点被 applyI18n 重建过，版本号要重新填
+    void loadVersion();
   });
+
+  // 版本号先显示出来：它不依赖密钥，闸门还没过也该看得见
+  void loadVersion();
 
   if (IS_INDEX) {
     // 房间列表模式：把房间详情那几块收起来
@@ -757,6 +785,7 @@
     void connect();
   } else {
     $("roomsCard").hidden = true;
+    $("backHome").hidden = false;
     $("roomName").textContent = ROOM_ID;
     document.title = t("docTitleRoom", { room: ROOM_ID });
     void connect();
